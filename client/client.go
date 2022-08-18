@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"os"
 )
 
 func main() {
@@ -29,9 +31,9 @@ func main() {
 		//3 клиент вводит ответ и отправляет серверу
 		var answer string
 
-		_, err = fmt.Scanln(&answer)
+		inputReader := bufio.NewReader(os.Stdin)
+		answer, _ = inputReader.ReadString('\n')
 		if err != nil {
-			fmt.Println("no such country", err)
 			continue
 		}
 
@@ -39,7 +41,7 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		//5Клиент получает ответ верно или нет
+		//5 Клиент получает ответ верно или нет
 		input1 := make([]byte, (1024 * 4))
 		n2, err := conn.Read(input1)
 		if n == 0 || err != nil {

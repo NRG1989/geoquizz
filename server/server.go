@@ -101,13 +101,12 @@ func handleConnection(conn net.Conn) {
 			fmt.Println("Read error:", err)
 			break
 		}
-		answer := string(input[0:n])
-		answer = strings.Title(answer)
+		answer := string(input[0 : n-1])
 
-		if answer == dict[target] {
+		if strings.Title(answer) == strings.Title(dict[target]) {
 			conn.Write([]byte("right"))
 		} else {
-			conn.Write([]byte("wrong"))
+			conn.Write([]byte(fmt.Sprint("wrong. ", dict[target], " is right")))
 		}
 		time.Sleep(time.Millisecond * 5)
 
