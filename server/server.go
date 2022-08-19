@@ -1,17 +1,13 @@
 package main
 
 import (
-	"database/sql"
-	"europe/handlers"
 	"fmt"
 	"math/rand"
 	"net"
+	"strings"
 	"time"
 
-	//sq "github.com/Masterminds/squirrel"
-	_ "github.com/lib/pq"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
+	"europe/handlers"
 )
 
 var dict = map[string]string{
@@ -70,15 +66,6 @@ func main() {
 	defer listener.Close()
 	fmt.Println("Server is listening...")
 
-	//build BD
-	connStr := "user=mydb1 password=123456 dbname=mydb1 sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("DB - ok")
-	defer db.Close()
-
 	//launch a loop
 	for {
 		conn, err := listener.Accept()
@@ -94,27 +81,27 @@ func main() {
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	for {
-		//1 сервер загадывает страну и посылает
+		//1 Server takes random country and sends to Client
 		target := randomCountry(dict)
 		conn.Write([]byte(target))
 
-		//4 сервер получает ответ и сравнивает и отправляет ок или нет
+		//4 Server recieves the answer, compares it and sends the message if it is right or not
 
 		answer, err := handlers.Recieve(conn)
 		if err != nil {
 			return
 		}
-		caser := cases.Title(language.English)
-		if caser.String(answer) == caser.String(dict[target]) {
+		if strings.EqualFold(answer, dict[target]) {
 			conn.Write([]byte("right "))
 		} else {
 			conn.Write([]byte(fmt.Sprint("wrong. ", dict[target], " is right ")))
 		}
-		time.Sleep(time.Millisecond * 5)
+		time.Sleep(time.Millisecond)
 
 	}
 }
 
+//take a random country
 func randomCountry(m map[string]string) string {
 	k := rand.Intn(len(m))
 	i := 0
@@ -126,14 +113,3 @@ func randomCountry(m map[string]string) string {
 	}
 	panic("unreachable")
 }
-
-// func GuessCapital() (string, error) {
-// 	qb := sq.
-// 		Select(
-// 			"capital",
-// 		).
-// 		From("europe.general").
-// 		OrderByRandom().
-// 		Limit(1)
-
-// }
