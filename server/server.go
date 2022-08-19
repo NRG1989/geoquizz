@@ -2,14 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"europe/handlers"
 	"fmt"
 	"math/rand"
 	"net"
-	"strings"
 	"time"
 
 	//sq "github.com/Masterminds/squirrel"
 	_ "github.com/lib/pq"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var dict = map[string]string{
@@ -59,6 +61,7 @@ var dict = map[string]string{
 }
 
 func main() {
+	// build server
 	listener, err := net.Listen("tcp", ":4545")
 	if err != nil {
 		fmt.Println(err)
@@ -67,15 +70,16 @@ func main() {
 	defer listener.Close()
 	fmt.Println("Server is listening...")
 
+	//build BD
 	connStr := "user=mydb1 password=123456 dbname=mydb1 sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		fmt.Errorf("the DB doesn't work")
 		panic(err)
 	}
 	fmt.Println("DB - ok")
 	defer db.Close()
 
+	//launch a loop
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -91,32 +95,30 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	for {
 		//1 сервер загадывает страну и посылает
-		target := pickCountry(dict)
+		target := randomCountry(dict)
 		conn.Write([]byte(target))
 
 		//4 сервер получает ответ и сравнивает и отправляет ок или нет
-		input := make([]byte, (1024 * 4))
-		n, err := conn.Read(input)
-		if n == 0 || err != nil {
-			fmt.Println("Read error:", err)
-			break
-		}
-		answer := string(input[0 : n-1])
 
-		if strings.Title(answer) == strings.Title(dict[target]) {
-			conn.Write([]byte("right"))
+		answer, err := handlers.Recieve(conn)
+		if err != nil {
+			return
+		}
+		caser := cases.Title(language.English)
+		if caser.String(answer) == caser.String(dict[target]) {
+			conn.Write([]byte("right "))
 		} else {
-			conn.Write([]byte(fmt.Sprint("wrong. ", dict[target], " is right")))
+			conn.Write([]byte(fmt.Sprint("wrong. ", dict[target], " is right ")))
 		}
 		time.Sleep(time.Millisecond * 5)
 
 	}
 }
 
-func pickCountry(m map[string]string) string {
+func randomCountry(m map[string]string) string {
 	k := rand.Intn(len(m))
 	i := 0
-	for x, _ := range m {
+	for x := range m {
 		if i == k {
 			return x
 		}

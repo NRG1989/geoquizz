@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"europe/handlers"
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -18,39 +20,35 @@ func main() {
 	for {
 
 		//2 клиент получает страну
-
-		input := make([]byte, (1024 * 4))
-		n, err := conn.Read(input)
-		if n == 0 || err != nil {
-			fmt.Println("Read error:", err)
-			break
+		source, err := handlers.Recieve(conn)
+		if err != nil {
+			return
 		}
-		source := string(input[0:n])
 		fmt.Print("What is the capital of ", source, "-")
 
 		//3 клиент вводит ответ и отправляет серверу
 		var answer string
 
 		inputReader := bufio.NewReader(os.Stdin)
-		answer, _ = inputReader.ReadString('\n')
+		answer, err = inputReader.ReadString('\n')
 		if err != nil {
-			continue
+			return
 		}
+
+		answer = strings.TrimSuffix(answer, "\n")
 
 		if n1, err := conn.Write([]byte(answer)); n1 == 0 || err != nil {
 			fmt.Println(err)
 			return
 		}
 		//5 Клиент получает ответ верно или нет
-		input1 := make([]byte, (1024 * 4))
-		n2, err := conn.Read(input1)
-		if n == 0 || err != nil {
-			fmt.Println("Read error:", err)
-			break
-		}
-		source1 := string(input1[0:n2])
 
-		fmt.Println(source1)
+		answerFromServer, err := handlers.Recieve(conn)
+		if err != nil {
+			return
+		}
+
+		fmt.Println(answerFromServer)
 
 	}
 }
